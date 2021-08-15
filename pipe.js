@@ -3,7 +3,7 @@ class Pipe {
         this.x = width;
         this.w = 80;
         this.s = 3;
-        this.gap = 125;
+        this.gap = 200;
 
         this.topy = random(height / 6, 3 / 4 * height);
         this.boty = this.topy+this.gap;

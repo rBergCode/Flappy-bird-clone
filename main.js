@@ -1,6 +1,7 @@
 let bird;
 let pipes;
 let score;
+let gameOver = false;
 let gameoverFrame;
 
 function setup() {
@@ -22,10 +23,12 @@ function draw() {
         pipe.update();
         pipe.show();
 
+        let birdMid = bird.w/2;
         //Touches a pipe
-        if (bird.x > pipe.x && bird.x < pipe.x + pipe.w) {
-            if (bird.y < pipe.topy || bird.y > pipe.boty) {
-                start();
+        if (bird.x+birdMid > pipe.x && bird.x-birdMid < pipe.x + pipe.w) {
+            if (bird.y-birdMid < pipe.topy || bird.y+birdMid   > pipe.boty) {
+                gameOver = true;
+                noLoop();
             }
         }  
     }
@@ -33,7 +36,7 @@ function draw() {
     bird.update();
     bird.show();
 
-    if ((frameCount - gameoverFrame) % 150 == 0) {
+    if ((frameCount - gameoverFrame) % 100 == 0) {
         pipes.push(new Pipe());
     }
 }
@@ -49,9 +52,12 @@ function keyPressed(){
     switch (key) {
         case ' ':
             bird.jump();
+            if (gameOver) {
+                start();
+                loop();
+                gameOver = false;
+            }
             break;
-        case 's':
-            noLoop();
         default:
             break;
     }
