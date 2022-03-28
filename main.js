@@ -1,65 +1,74 @@
-let bird;
-let pipes;
-let score;
-let gameOver = false;
-let gameoverFrame;
+const TOTAL = 100;
+let birds = [];
+let savedBirds = [];
+
+let pipes = [];
+let counter = 0;
+let slider;
 
 function setup() {
     createCanvas(400, 800);
-    start();
+
+    ml5.tf.setBackend("cpu");
+    slider = createSlider(1, 10, 1);
+
+    for (let i = 0; i < TOTAL; i++) {
+        birds[i] = new Bird();
+    }
 }
 
 function draw() {
-    background(0);
+    for (let n = 0; n < slider.value(); n++) {
+        if (counter % 50 === 0) {
+            pipes.push(new Pipe());
+        }
+        counter++;
 
-    for (const pipe of pipes) {
-        if (pipe.isOffScreen()) {
-            pipes.shift();
+        for (let i = pipes.length - 1; i >= 0; i -= 1) {
+            pipes[i].update();
+
+            for (let j = birds.length - 1; j >= 0; j -= 1) {
+                if (pipes[i].hits(birds[j])) {
+                    // Save bird if it dies
+                    savedBirds.push(birds.splice(j, 1)[0]);
+                }
+            }
+
+            // Remove pipes when they leave
+            if (pipes[i].offScreen()) {
+                pipes.splice(i, 1);
+            }
+        }
+
+        // Remove / save any birds that go offscreen
+        for (let i = birds.length - 1; i >= 0; i -= 1) {
+            if (birds[i].offScreen()) {
+                savedBirds.push(birds.splice(i, 1)[0]);
+            }
+        }
+
+        // Run all birds
+        for (const bird of birds) {
+            bird.think(pipes);
+            bird.update();
+        }
+
+        // If all the birds have died go to the next generation
+        if (birds.length === 0) {
+            counter = 0;
+            nextGeneration();
+            pipes = [];
         }
     }
 
 
+    background(0);
+
+    for (const bird of birds) {
+        bird.show();
+    }
+
     for (const pipe of pipes) {
-        pipe.update();
         pipe.show();
-
-        let birdMid = bird.w/2;
-        //Touches a pipe
-        if (bird.x+birdMid > pipe.x && bird.x-birdMid < pipe.x + pipe.w) {
-            if (bird.y-birdMid < pipe.topy || bird.y+birdMid   > pipe.boty) {
-                gameOver = true;
-                noLoop();
-            }
-        }  
-    }
-
-    bird.update();
-    bird.show();
-
-    if ((frameCount - gameoverFrame) % 100 == 0) {
-        pipes.push(new Pipe());
     }
 }
-
-function start() {
-    bird = new Bird();
-    pipes = [new Pipe(width)];
-    score = 0;
-    gameoverFrame = frameCount - 1;
-}
-
-function keyPressed(){
-    switch (key) {
-        case ' ':
-            bird.jump();
-            if (gameOver) {
-                start();
-                loop();
-                gameOver = false;
-            }
-            break;
-        default:
-            break;
-    }
-}
-
