@@ -1,74 +1,158 @@
-const TOTAL = 100;
-let birds = [];
-let savedBirds = [];
+/*
+Create a pong game in p5.js with the following features:
+- The game should have a ball
+- The game should have a paddle
+- The game should have a score
+*/
 
-let pipes = [];
-let counter = 0;
-let slider;
+// Global variables
+let ball;
+let player1;
+let player2;
+let score1 = 0;
+let score2 = 0;
+let gameOver = false;
+let winner = "";
 
-function setup() {
-    createCanvas(400, 800);
+// Padddle class
+class Paddle {
+    // Paddle constructor
+    constructor(player) {
+        this.player = player;
+        this.width = 20;
+        this.height = 100;
+        this.speed = 10;
+        this.score = 0;
+        this.color = "white";
+        this.x = player === 1 ? 20 : width - 20;
+        this.y = height / 2 - this.height / 2;
+    }
 
-    ml5.tf.setBackend("cpu");
-    slider = createSlider(1, 10, 1);
+    // Paddle draw function
+    draw() {
+        rect(this.x, this.y, this.width, this.height);
+    }
 
-    for (let i = 0; i < TOTAL; i++) {
-        birds[i] = new Bird();
+    // Paddle move function
+    move(direction) {
+        if (direction === "up") {
+            this.y -= this.speed;
+        } else if (direction === "down") {
+            this.y += this.speed;
+        }
     }
 }
 
+//Ball class
+class Ball {
+    // Ball constructor
+    constructor() {
+        this.x = width / 2;
+        this.y = height / 2;
+        this.radius = 10;
+        this.speed = 5;
+        this.direction = {
+            x: 1,
+            y: 1
+        };
+    }
+
+    // Ball draw function
+    draw() {
+        ellipse(this.x, this.y, this.radius * 2, this.radius * 2);
+    }
+
+    // Ball move function
+    move() {
+        ball.x += ball.speed * ball.direction.x;
+        ball.y += ball.speed * ball.direction.y;
+    }
+}
+
+// Setup function
+function setup() {
+    createCanvas(800, 400);
+    ball = new Ball();
+    player1 = new Paddle(1);
+    player2 = new Paddle(2);
+}
+
+// Draw function
 function draw() {
-    for (let n = 0; n < slider.value(); n++) {
-        if (counter % 50 === 0) {
-            pipes.push(new Pipe());
-        }
-        counter++;
-
-        for (let i = pipes.length - 1; i >= 0; i -= 1) {
-            pipes[i].update();
-
-            for (let j = birds.length - 1; j >= 0; j -= 1) {
-                if (pipes[i].hits(birds[j])) {
-                    // Save bird if it dies
-                    savedBirds.push(birds.splice(j, 1)[0]);
-                }
-            }
-
-            // Remove pipes when they leave
-            if (pipes[i].offScreen()) {
-                pipes.splice(i, 1);
-            }
-        }
-
-        // Remove / save any birds that go offscreen
-        for (let i = birds.length - 1; i >= 0; i -= 1) {
-            if (birds[i].offScreen()) {
-                savedBirds.push(birds.splice(i, 1)[0]);
-            }
-        }
-
-        // Run all birds
-        for (const bird of birds) {
-            bird.think(pipes);
-            bird.update();
-        }
-
-        // If all the birds have died go to the next generation
-        if (birds.length === 0) {
-            counter = 0;
-            nextGeneration();
-            pipes = [];
-        }
-    }
-
-
+    // Background
     background(0);
+    // Draw ball
+    ball.draw();
+    // Draw paddles
+    player1.draw();
+    player2.draw();
 
-    for (const bird of birds) {
-        bird.show();
+    // Move ball
+    ball.move();
+
+    // move paddles
+    if (keyIsDown(UP_ARROW)) {
+        player1.move("up");
+    } else if (keyIsDown(DOWN_ARROW)) {
+        player1.move("down");
     }
 
-    for (const pipe of pipes) {
-        pipe.show();
+    // Automatically move player 2
+    player2.y = ball.y;
+
+    // Draw white scores
+    fill("white");
+    text(score1, width / 4, height / 4);
+    text(score2, width * 3 / 4, height / 4);
+    // Check if game is over
+    if (gameOver) {
+        textSize(64);
+        text(winner, width / 2 - 50, height / 2);
+    }
+    // Check if ball is out of bounds
+    if (ball.y + ball.radius > height || ball.y - ball.radius < 0) {
+        ball.direction.y *= -1;
+    }
+    // Check if ball hits paddle
+    if (ball.x - ball.radius < player1.x + player1.width &&
+        ball.x + ball.radius > player1.x &&
+        ball.y - ball.radius < player1.y + player1.height &&
+        ball.y + ball.radius > player1.y) {
+        ball.direction.x *= -1;
+    }
+    if (ball.x - ball.radius < player2.x + player2.width &&
+        ball.x + ball.radius > player2.x &&
+        ball.y - ball.radius < player2.y + player2.height &&
+        ball.y + ball.radius > player2.y) {
+        ball.direction.x *= -1;
+    }
+
+    // Check if lost
+    if (ball.x - ball.radius < 0) {
+        score2++;
+        ball.x = width / 2;
+        ball.y = height / 2;
+        ball.direction.x = 1;
+        ball.direction.y = 1;
+    }
+    if (ball.x + ball.radius > width) {
+        score1++;
+        ball.x = width / 2;
+        ball.y = height / 2;
+        ball.direction.x = -1;
+        ball.direction.y = 1;
+    }
+    // Check if game is over
+    checkGameOver();
+}
+
+// Function which checks if game is over
+function checkGameOver() {
+    if (score1 === 3) {
+        gameOver = true;
+        winner = "Player 1 wins!";
+    } else if (score2 === 3) {
+        gameOver = true;
+        winner = "Player 2 wins!";
     }
 }
